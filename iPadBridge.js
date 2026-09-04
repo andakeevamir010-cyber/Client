@@ -1,118 +1,71 @@
-/*
- * Shadow iPad Bridge
- * Eaglercraft 1.8.x
- */
-
 (function () {
     "use strict";
 
-    window.ShadowIPadBridge = {
-
-        initialized: false,
-
-        initialize: function () {
-
-            if (this.initialized) {
-                return;
-            }
-
-            this.initialized = true;
-
-            /*
-             * Mouse / camera bridge.
-             *
-             * The generated iPad mouse system calls this
-             * function whenever the trackpad moves.
-             */
-            window.ShadowEaglerCameraMove = function (dx, dy) {
-
-                if (
-                    window.ShadowIPadBridge
-                        .onCameraMove
-                ) {
-                    window.ShadowIPadBridge
-                        .onCameraMove(dx, dy);
-                }
-            };
-
-            /*
-             * Skin bridge.
-             */
-            window.ShadowEaglerSetSkin = function (
-                data,
-                filename
-            ) {
-
-                if (
-                    window.ShadowIPadBridge
-                        .onSkinSelected
-                ) {
-                    window.ShadowIPadBridge
-                        .onSkinSelected(
-                            data,
-                            filename
-                        );
-                }
-            };
-
-            /*
-             * Resource-pack bridge.
-             */
-            window.ShadowEaglerSetResourcePack =
-                function (
-                    data,
-                    filename
-                ) {
-
-                    if (
-                        window.ShadowIPadBridge
-                            .onResourcePackSelected
-                    ) {
-                        window.ShadowIPadBridge
-                            .onResourcePackSelected(
-                                data,
-                                filename
-                            );
-                    }
-                };
-        },
-
+    window.ShadowEaglerCameraMove = function (dx, dy) {
         /*
-         * These functions are intentionally empty.
+         * Sends camera movement into the Eaglercraft mouse system.
          *
-         * The actual Eaglercraft 1.8 implementation
-         * should replace them.
+         * EaglerMobile uses JavaScript-side mouse/pointer handling
+         * because iOS Safari doesn't provide normal desktop Pointer Lock.
          */
 
-        onCameraMove: function (dx, dy) {
-            console.log(
-                "Eagler camera movement:",
-                dx,
-                dy
-            );
-        },
-
-        onSkinSelected: function (
-            data,
-            filename
-        ) {
-            console.log(
-                "Skin selected:",
-                filename
-            );
-        },
-
-        onResourcePackSelected: function (
-            data,
-            filename
-        ) {
-            console.log(
-                "Resource pack selected:",
-                filename
-            );
+        if (typeof window.mouseEvent === "function") {
+            window.mouseEvent("mousemove", dx, dy);
+            return;
         }
+
+        if (typeof window.ShadowEaglerMouseEvent === "function") {
+            window.ShadowEaglerMouseEvent(dx, dy);
+            return;
+        }
+
+        /*
+         * Fallback:
+         * Store the movement so the Eaglercraft mouse handler
+         * can consume it when connected.
+         */
+        window.ShadowEaglerPendingMouseX =
+            (window.ShadowEaglerPendingMouseX || 0) + dx;
+
+        window.ShadowEaglerPendingMouseY =
+            (window.ShadowEaglerPendingMouseY || 0) + dy;
     };
 
-    window.ShadowIPadBridge.initialize();
+    window.ShadowEaglerMouseMove = function (dx, dy) {
+        window.ShadowEaglerCameraMove(dx, dy);
+    };
+
+    window.ShadowEaglerSetSkin = function (file) {
+        window.ShadowEaglerSkinFile = file;
+
+        window.dispatchEvent(
+            new CustomEvent("ShadowEaglerSkinSelected", {
+                detail: file
+            })
+        );
+    };
+
+    window.ShadowEaglerSetResourcePack = function (file) {
+        window.ShadowEaglerResourcePackFile = file;
+
+        window.dispatchEvent(
+            new CustomEvent("ShadowEaglerResourcePackSelected", {
+                detail: file
+            })
+        );
+    };
+
+    window.ShadowEaglerGetMouseMovement = function () {
+        var x = window.ShadowEaglerPendingMouseX || 0;
+        var y = window.ShadowEaglerPendingMouseY || 0;
+
+        window.ShadowEaglerPendingMouseX = 0;
+        window.ShadowEaglerPendingMouseY = 0;
+
+        return {
+            x: x,
+            y: y
+        };
+    };
 
 })();

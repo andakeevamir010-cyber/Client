@@ -1,71 +1,61 @@
-/*
- * Shadow iPad Loader
- * Eaglercraft 1.8.x
- */
-
 (function () {
     "use strict";
 
-    window.ShadowIPadLoader = {
+    var files = [
+        "Mouselock.js",
+        "iPadBridge.js",
+        "iPadPointerLock.js",
+        "iPadControl.js",
+        "iPadMenu.js"
+    ];
 
-        loaded: false,
-
-        load: function () {
-
-            if (this.loaded) {
-                return;
-            }
-
-            this.loaded = true;
-
-            console.log(
-                "Shadow iPad integration initialized."
-            );
-
-            /*
-             * Initialize the bridge.
-             */
-            if (window.ShadowIPadBridge) {
-                window.ShadowIPadBridge.initialize();
-            }
-
-            /*
-             * Make the iPad menu available.
-             */
-            window.ShadowIPadOpenMenu = function () {
-
-                if (window.ShadowIPadMenu) {
-                    window.ShadowIPadMenu.open();
-                }
-
-            };
-
-            /*
-             * Keyboard shortcut:
-             *
-             * Press F8 to open the Shadow iPad menu.
-             */
-            document.addEventListener(
-                "keydown",
-                function (event) {
-
-                    if (event.key === "F8") {
-
-                        event.preventDefault();
-
-                        window.ShadowIPadOpenMenu();
-
-                    }
-
-                }
-            );
-
-            console.log(
-                "Press F8 to open Shadow iPad Controls."
-            );
+    function loadFile(index) {
+        if (index >= files.length) {
+            start();
+            return;
         }
-    };
 
-    window.ShadowIPadLoader.load();
+        var script = document.createElement("script");
+
+        script.src = files[index];
+        script.onload = function () {
+            loadFile(index + 1);
+        };
+
+        script.onerror = function () {
+            console.error(
+                "[Shadow iPad] Failed to load: " + files[index]
+            );
+        };
+
+        document.head.appendChild(script);
+    }
+
+    function start() {
+        console.log("[Shadow iPad] Controls loaded");
+
+        if (window.ShadowIPadControls) {
+            window.ShadowIPadControls.enableMouseLock();
+        }
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "F8") {
+                if (window.ShadowIPadOpenMenu) {
+                    window.ShadowIPadOpenMenu();
+                }
+            }
+
+            if (event.key === "Escape") {
+                if (
+                    window.ShadowIPadPointerLock &&
+                    window.ShadowIPadPointerLock.isLocked()
+                ) {
+                    document.exitPointerLock();
+                }
+            }
+        });
+    }
+
+    loadFile(0);
 
 })();

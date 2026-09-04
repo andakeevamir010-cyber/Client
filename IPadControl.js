@@ -1,75 +1,50 @@
-/*
- * Shadow iPad Controls
- * Eaglercraft 1.8.x
- *
- * Connects the iPad soft mouse-lock system to the game's
- * mouse/camera movement callback.
- */
-
-(function() {
+(function () {
     "use strict";
 
+    var sensitivity = 1.0;
+    var invertY = false;
+
     window.ShadowIPadControls = {
-
-        sensitivity: 1.0,
-        invertY: false,
-
-        initialize: function() {
-
-            window.ShadowEaglerMouseMove = function(dx, dy) {
-
-                dx *= window.ShadowIPadControls.sensitivity;
-                dy *= window.ShadowIPadControls.sensitivity;
-
-                if (window.ShadowIPadControls.invertY) {
-                    dy = -dy;
-                }
-
-                /*
-                 * Send the movement to the Eaglercraft integration.
-                 */
-                if (typeof window.ShadowEaglerCameraMove === "function") {
-                    window.ShadowEaglerCameraMove(dx, dy);
-                }
-            };
+        setSensitivity: function (value) {
+            sensitivity = Math.max(0.1, Math.min(5.0, Number(value) || 1.0));
         },
 
-        setSensitivity: function(value) {
+        getSensitivity: function () {
+            return sensitivity;
+        },
 
-            value = Number(value);
+        setInvertY: function (value) {
+            invertY = !!value;
+        },
 
-            if (!isFinite(value)) {
-                return;
+        mouseMove: function (dx, dy) {
+            dx *= sensitivity;
+            dy *= sensitivity;
+
+            if (invertY) {
+                dy = -dy;
             }
 
-            this.sensitivity =
-                Math.max(0.05, Math.min(5.0, value));
-        },
-
-        setInvertY: function(value) {
-            this.invertY = !!value;
-        },
-
-        enable: function(element) {
-
-            if (!window.ShadowIPadMouseLock) {
-                console.error(
-                    "ShadowIPadMouseLock.js must be loaded first."
-                );
-                return false;
+            if (typeof window.ShadowEaglerCameraMove === "function") {
+                window.ShadowEaglerCameraMove(dx, dy);
             }
-
-            this.initialize();
-
-            return window.ShadowIPadMouseLock.start(element);
         },
 
-        disable: function() {
-
+        enableMouseLock: function () {
             if (window.ShadowIPadMouseLock) {
-                window.ShadowIPadMouseLock.stop();
+                window.ShadowIPadMouseLock.enable();
+            }
+        },
+
+        disableMouseLock: function () {
+            if (window.ShadowIPadMouseLock) {
+                window.ShadowIPadMouseLock.disable();
             }
         }
+    };
+
+    window.ShadowEaglerMouseMove = function (dx, dy) {
+        window.ShadowIPadControls.mouseMove(dx, dy);
     };
 
 })();
